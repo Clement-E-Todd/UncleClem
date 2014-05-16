@@ -46,12 +46,12 @@ public class UCPlayer : UCObject
 			// Direction
 			moveDirection = new Vector3 (-movement.x, 0, -movement.y).normalized;
 			transform.rotation = Quaternion.LookRotation (moveDirection);
-			moveDirection = (moveDirection - (Vector3.Dot (moveDirection, transform.up) * transform.up)).normalized*moveDirection.magnitude;
+			moveDirection = (moveDirection - (Vector3.Dot (moveDirection, -gravityNormal) * -gravityNormal)).normalized*moveDirection.magnitude;
 
 			// Speed
 			{
 				// Since walking/running mostly concerns the horizontal plane we want to keep track of that
-				Vector3 originalHorizontalVelocity = velocity - (Vector3.Dot (velocity, transform.up) * transform.up);
+				Vector3 originalHorizontalVelocity = velocity - (Vector3.Dot (velocity, -gravityNormal) * -gravityNormal);
 				// Next we need to find out the top speed we can move at given the current situation
 				running = playerInput.GetRun (false);
 				moveSpeedGoal = !isSliding ? (movement.magnitude * moveSpeedMax / (running ? 1 : 2)) : (originalHorizontalVelocity.magnitude);
@@ -59,7 +59,6 @@ public class UCPlayer : UCObject
 				Vector3 slope = groundNormal - (Vector3.Dot (groundNormal, gravityNormal) * gravityNormal);
 				float slopeFactor = Vector3.Dot(slope, originalHorizontalVelocity.normalized);
 				if (slopeFactor < 0) {
-//					slopeFactor = 1+Mathf.Asin(slopeFactor) / (Mathf.PI/2); // Convert to a linear value
 					slopeFactor = 1+slopeFactor;
 					moveSpeedGoal *= slopeFactor;
 				}
@@ -76,7 +75,7 @@ public class UCPlayer : UCObject
 				// Finally we apply these factors to our speed
 				velocity += velocityToAdd;
 				// If we went over the speed limit, now is the time to pull back
-				Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, transform.up) * transform.up);
+				Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravityNormal) * -gravityNormal);
 				Vector3 verticalVelocity = velocity - horizontalVelocity;
 				if (horizontalVelocity.magnitude > moveSpeedGoal) {
 					horizontalVelocity = horizontalVelocity.normalized * Mathf.Max (originalHorizontalVelocity.magnitude, moveSpeedGoal);

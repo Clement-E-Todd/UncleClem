@@ -43,19 +43,27 @@ public class UCObject : MonoBehaviour
 		characterController.Move (velocity * Time.deltaTime);
 
 		// Disable sliding once we come to a stop
-		Vector3 horizontalVelocity = velocity - (Vector3.Dot(velocity, transform.up) * transform.up);
-		if (horizontalVelocity.magnitude < 2)
+		Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravityNormal) * -gravityNormal);
+		if (horizontalVelocity.magnitude < 1)
 			isSliding = false;
 
 		// While on the ground, maintain a sensible downward velocity
 		if (isGrounded) {
-			velocity = velocity - (Vector3.Dot (velocity, transform.up) * transform.up) + (gravityNormal * gravityStrength);
-			Debug.Log(Vector3.Dot (velocity, transform.up));
+			Vector3 slope = groundNormal - (Vector3.Dot (groundNormal, gravityNormal) * gravityNormal);
+			float slopeFactor = (horizontalVelocity != Vector3.zero) ? -Vector3.Dot(slope, horizontalVelocity.normalized) : 0.0f;
+
+			Debug.Log (groundNormal.y);
+
+			if (slopeFactor < 0)	// downhill
+				velocity = velocity - (Vector3.Dot (velocity, groundNormal) * groundNormal);
+			else 	 				// uphill or level ground
+				velocity = horizontalVelocity;
+			velocity += (gravityNormal * gravityStrength);
 		}
 
-		// If we are not on the ground, set the groundNormal to our "up" vector
+		// If we are not on the ground, our groundNormal should instead relfect an oposition of gravity
 		if (!isGrounded && !isSliding)
-			groundNormal = transform.up;
+			groundNormal = -gravityNormal;
 	}
 
 	// Collision event when THIS moves into a COLLIDER
@@ -75,7 +83,7 @@ public class UCObject : MonoBehaviour
 				UCForce force = new UCForce ();
 				force.source = hitTarget;
 				force.isFloor = true;
-				force.normal = transform.up;
+				force.normal = -gravityNormal;
 
 				force.globalPoint = transform.position;
 				force.localPoint = force.source.InverseTransformPoint (transform.position);
@@ -94,7 +102,7 @@ public class UCObject : MonoBehaviour
 				velocity = velocity - (Vector3.Dot (velocity, hit.normal) * hit.normal) + (gravityNormal * gravityStrength);
 
 				if (hit.normal.y <= slopeLimit) {
-					Vector3 slideDirection = (-transform.up - (Vector3.Dot (-transform.up, hit.normal) * hit.normal)).normalized;
+					Vector3 slideDirection = (gravityNormal - (Vector3.Dot (gravityNormal, hit.normal) * hit.normal)).normalized;
 					const float slideSpeedLimit = 20;
 
 					Vector3 originalVelocity = velocity;
@@ -209,7 +217,7 @@ public class UCObject : MonoBehaviour
 			friction /= totalFloors;
 
 		if (isSliding)
-			friction *= 0.25f;
+			friction *= 0.35f;
 
 //		Debug.Log ("Friction: " + friction);
 		return friction;
@@ -220,8 +228,8 @@ public class UCObject : MonoBehaviour
 		Vector3 resistance = Vector3.zero;
 
 		if (isGrounded || isSliding) {
-			Vector3 groundVelocity = velocity - Vector3.Dot (velocity, transform.up) * transform.up;
-			resistance = groundVelocity * Time.deltaTime * 10 * GetGroundFriction ();
+			Vector3 horizontalVelocity = velocity - Vector3.Dot (velocity, -gravityNormal) * -groundNormal;
+			resistance = horizontalVelocity * Time.deltaTime * 10 * GetGroundFriction ();
 //			Debug.Log("Resistance: (" + resistance.x + ", " + resistance.y + ", " + resistance.z + ")");
 		}
 

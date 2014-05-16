@@ -14,27 +14,60 @@ public class UCInputTesting : UCInput {
 	}
 
 	public override bool	GetRun (bool tap) {
-		return tap ? Input.GetKeyDown(KeyCode.JoystickButton18) : Input.GetKey(KeyCode.JoystickButton18);
+		if (IsOnMacOS())
+			return tap ? Input.GetKeyDown(KeyCode.JoystickButton18) : Input.GetKey(KeyCode.JoystickButton18);
+		if (IsOnWindows())
+			return tap ? Input.GetKeyDown (KeyCode.JoystickButton2) : Input.GetKey (KeyCode.JoystickButton2);
+		else
+			return false;
 	}
 
 	public override bool	GetJump (bool tap) {
-		return tap ? Input.GetKeyDown(KeyCode.JoystickButton16) : Input.GetKey(KeyCode.JoystickButton16);
+		if (IsOnMacOS())
+			return tap ? Input.GetKeyDown(KeyCode.JoystickButton16) : Input.GetKey(KeyCode.JoystickButton16);
+		if (IsOnWindows())
+			return tap ? Input.GetKeyDown (KeyCode.JoystickButton0) : Input.GetKey (KeyCode.JoystickButton0);
+		else
+			return false;
 	}
 
 	public override bool	GetAttack (bool tap) {
-		return tap ? Input.GetKeyDown(KeyCode.JoystickButton17) : Input.GetKey(KeyCode.JoystickButton17);
+		if (IsOnMacOS())
+			return tap ? Input.GetKeyDown(KeyCode.JoystickButton17) : Input.GetKey(KeyCode.JoystickButton17);
+		if (IsOnWindows())
+			return tap ? Input.GetKeyDown (KeyCode.JoystickButton1) : Input.GetKey (KeyCode.JoystickButton1);
+		else
+			return false;
 	}
 
 	public override bool	GetGrab (bool tap) {
-		return tap ? Input.GetKeyDown(KeyCode.JoystickButton19) : Input.GetKey(KeyCode.JoystickButton19);
+		if (IsOnMacOS())
+			return tap ? Input.GetKeyDown(KeyCode.JoystickButton19) : Input.GetKey(KeyCode.JoystickButton19);
+		if (IsOnWindows())
+			return tap ? Input.GetKeyDown (KeyCode.JoystickButton3) : Input.GetKey (KeyCode.JoystickButton3);
+		else
+			return false;
 	}
 
-	public override bool	GetDuck (bool tap) {
-		return tap ? Input.GetKeyDown(KeyCode.JoystickButton13) : Input.GetKey(KeyCode.JoystickButton13);
+	public override bool GetDuck (bool tap) {
+		throw new System.NotImplementedException ();
 	}
 
-	public override bool	GetLockOn (bool tap) {
-		return tap ? Input.GetKeyDown(KeyCode.JoystickButton14) : Input.GetKey(KeyCode.JoystickButton14);
+	public override bool GetLockOn (bool tap) {
+		throw new System.NotImplementedException ();
+	}
+
+	bool IsOnMacOS() {
+		return Application.platform == RuntimePlatform.OSXDashboardPlayer ||
+				Application.platform == RuntimePlatform.OSXEditor ||
+				Application.platform == RuntimePlatform.OSXPlayer ||
+				Application.platform == RuntimePlatform.OSXWebPlayer;
+	}
+
+	bool IsOnWindows() {
+		return Application.platform == RuntimePlatform.WindowsEditor ||
+				Application.platform == RuntimePlatform.WindowsPlayer ||
+				Application.platform == RuntimePlatform.WindowsWebPlayer;
 	}
 
 }
