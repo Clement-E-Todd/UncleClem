@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class UCInputKeyAndMouse : UCInput {
+public class ExampleInputKeyAndMouse : ExampleInput {
 	
 	public override Vector2	GetMovement () {
 		return new Vector2 ((Input.GetKey(KeyCode.A) ? -1 : 0) + (Input.GetKey(KeyCode.D) ? 1 : 0),

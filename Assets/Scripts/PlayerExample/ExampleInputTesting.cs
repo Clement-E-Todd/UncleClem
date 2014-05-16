@@ -3,7 +3,7 @@ using System.Collections;
 
 // An input scheme for a wired Xbox 360 controller plugged into a Mac.
 
-public class UCInputTesting : UCInput {
+public class ExampleInputTesting : ExampleInput {
 
 	public override Vector2	GetMovement () {
 		return new Vector2 (Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
@@ -50,11 +50,11 @@ public class UCInputTesting : UCInput {
 	}
 
 	public override bool GetDuck (bool tap) {
-		throw new System.NotImplementedException ();
+		return false;
 	}
 
 	public override bool GetLockOn (bool tap) {
-		throw new System.NotImplementedException ();
+		return false;
 	}
 
 	bool IsOnMacOS() {

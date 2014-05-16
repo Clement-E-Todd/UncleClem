@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public abstract class UCInput : MonoBehaviour {
+public abstract class ExampleInput : MonoBehaviour {
 
 	public abstract Vector2	GetMovement ();
 	public abstract Vector2	GetCamera ();

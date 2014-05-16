@@ -2,40 +2,49 @@
 using System.Collections;
 using System.Collections.Generic;
 
-//[RequireComponent (typeof (CharacterController))]
+[RequireComponent (typeof (CharacterController))]
 
 public class UCObject : MonoBehaviour
 {
 	// Physics viariables
 	CharacterController characterController;
+	public GameObject modelObject;
 	protected Vector3 velocity;
-	protected bool isGrounded = false;
+	protected bool isGrounded = true;
 	protected bool isSliding = false;
-	protected Vector3 gravityNormal = new Vector3 (0, -1, 0);
+	protected Vector3 gravityNormal = new Vector3 (1, -1, 0).normalized;
 	protected float gravityStrength = 0.98f;
 	protected Vector3 movingPlatformVelocity = Vector3.zero;
 	protected Vector3 groundNormal = Vector3.up;
+	public const float slideSpeedLimit = 20;
 	Vector3 previousPosition;
 	List<UCForce> appliedForces = new List<UCForce> ();
+
+	public bool debugMessages = false;
 
 	protected virtual void Start ()
 	{
 		characterController = (CharacterController)GetComponent (typeof(CharacterController));
+
+		// Give gravity a head start so that the object can be considered "grounded" in its first frame if applicable
+		velocity += gravityNormal * gravityStrength;
 	}
 
 	protected virtual void Update ()
 	{
-		// Apply gravity
-		if (!isGrounded)
-			velocity += gravityNormal * gravityStrength;
-
 		// Reduce velocity based on the friction of the ground
 		velocity -= GetGroundResistance ();
+		Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravityNormal) * -gravityNormal);
+		if (horizontalVelocity.magnitude < 1)
+			velocity -= horizontalVelocity;
 
 		// Be moved by any colliders that are applying force against us
 		ApplyForces ();
 
-//		Debug.Log("Velocity: (" + velocity.x + ", " + velocity.y + ", " + velocity.z + ") Magnitude: " + velocity.magnitude);
+		// Debug messages written to the console
+		if (debugMessages) {
+//			Debug.Log("Velocity: (" + velocity.x + ", " + velocity.y + ", " + velocity.z + ") Magnitude: " + velocity.magnitude);
+		}
 
 		// Move the character controller
 		isGrounded = false;
@@ -43,27 +52,30 @@ public class UCObject : MonoBehaviour
 		characterController.Move (velocity * Time.deltaTime);
 
 		// Disable sliding once we come to a stop
-		Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravityNormal) * -gravityNormal);
 		if (horizontalVelocity.magnitude < 1)
 			isSliding = false;
+
+		// If we are not on the ground, our groundNormal should instead relfect an oposition of gravity
+		if (!isGrounded && !isSliding)
+			groundNormal = -gravityNormal;
 
 		// While on the ground, maintain a sensible downward velocity
 		if (isGrounded) {
 			Vector3 slope = groundNormal - (Vector3.Dot (groundNormal, gravityNormal) * gravityNormal);
 			float slopeFactor = (horizontalVelocity != Vector3.zero) ? -Vector3.Dot(slope, horizontalVelocity.normalized) : 0.0f;
-
-			Debug.Log (groundNormal.y);
-
+			
 			if (slopeFactor < 0)	// downhill
 				velocity = velocity - (Vector3.Dot (velocity, groundNormal) * groundNormal);
 			else 	 				// uphill or level ground
 				velocity = horizontalVelocity;
-			velocity += (gravityNormal * gravityStrength);
 		}
 
-		// If we are not on the ground, our groundNormal should instead relfect an oposition of gravity
-		if (!isGrounded && !isSliding)
-			groundNormal = -gravityNormal;
+		// Apply gravity
+		velocity += gravityNormal * gravityStrength;
+
+		// The transform's "up" vector should always be the opposite of gravity. 
+		transform.up = -gravityNormal;
+		characterController.transform.up = transform.up;
 	}
 
 	// Collision event when THIS moves into a COLLIDER
@@ -72,13 +84,13 @@ public class UCObject : MonoBehaviour
 		// See what we hit
 		Transform hitTarget = hit.collider.transform;
 
-		// See if the hit target is a platform that we are now standing on (TODO: support gravity in any direction)
-		if (hit.moveDirection.y < -0.9) {
+		// See if the hit target is a platform that we are now standing on
+		if (Vector3.Dot(gravityNormal, hit.moveDirection) > 0.9f) {
 
 			groundNormal = hit.normal;
 			float slopeLimit = Mathf.Sin((1 - ((float)characterController.slopeLimit/90.0f)) * ((Mathf.PI/2)));
 
-			if (hit.normal.y > slopeLimit) {
+			if (Vector3.Dot(hit.normal, -gravityNormal) > slopeLimit) {
 				if (!isSliding) isGrounded = true;
 				UCForce force = new UCForce ();
 				force.source = hitTarget;
@@ -87,8 +99,8 @@ public class UCObject : MonoBehaviour
 
 				force.globalPoint = transform.position;
 				force.localPoint = force.source.InverseTransformPoint (transform.position);
-				force.globalRotation = transform.rotation;
-				force.localRotation = Quaternion.Inverse (force.source.rotation) * transform.rotation;
+				force.globalRotation = modelObject.transform.rotation;
+				force.localRotation = Quaternion.Inverse (force.source.rotation) * modelObject.transform.rotation;
 
 				appliedForces.Add (force);
 			} else {
@@ -96,17 +108,14 @@ public class UCObject : MonoBehaviour
 				isSliding = true;
 			}
 
-//			Debug.Log("hit.normal.y: " + (hit.normal.y) + ", Slope Limit: " + slopeLimit + (isSliding?", Sliding":", Not Sliding"));
-
 			if (isSliding) {
 				velocity = velocity - (Vector3.Dot (velocity, hit.normal) * hit.normal) + (gravityNormal * gravityStrength);
 
-				if (hit.normal.y <= slopeLimit) {
+				if (Vector3.Dot(hit.normal, -gravityNormal) <= slopeLimit) {
 					Vector3 slideDirection = (gravityNormal - (Vector3.Dot (gravityNormal, hit.normal) * hit.normal)).normalized;
-					const float slideSpeedLimit = 20;
 
 					Vector3 originalVelocity = velocity;
-					velocity += slideDirection * gravityStrength * (1 - hit.normal.y);
+					velocity += slideDirection * gravityStrength * (1 - Vector3.Dot(hit.normal, -gravityNormal));
 					if (velocity.magnitude > slideSpeedLimit) {
 						velocity = velocity.normalized * Mathf.Max (originalVelocity.magnitude, slideSpeedLimit);
 					}
@@ -153,8 +162,8 @@ public class UCObject : MonoBehaviour
 			platform.AssumePreviousTransform ();
 			force.globalPoint = transform.position;
 			force.localPoint = force.source.InverseTransformPoint (transform.position);
-			force.globalRotation = transform.rotation;
-			force.localRotation = Quaternion.Inverse (force.source.rotation) * transform.rotation;
+			force.globalRotation = modelObject.transform.rotation;
+			force.localRotation = Quaternion.Inverse (force.source.rotation) * modelObject.transform.rotation;
 			platform.AssumeCurrentTransform ();
 
 			appliedForces.Add (force);
@@ -191,8 +200,8 @@ public class UCObject : MonoBehaviour
 			// Follow the rotation of the force's source
 			Quaternion newGlobalRotation = appliedForces [0].source.rotation * appliedForces [0].localRotation;
 			Quaternion rotationDiff = newGlobalRotation * Quaternion.Inverse (appliedForces [0].globalRotation);
-			rotationDiff = Quaternion.FromToRotation (rotationDiff * transform.up, transform.up) * rotationDiff;
-			transform.rotation = rotationDiff * transform.rotation;
+			rotationDiff = Quaternion.FromToRotation (rotationDiff * modelObject.transform.up, modelObject.transform.up) * rotationDiff;
+			modelObject.transform.rotation = rotationDiff * modelObject.transform.rotation;
 
 			// Now that we've used the force it is no longer valid and must be registered again if it is still applicable
 			appliedForces.Remove (appliedForces [0]);
@@ -228,9 +237,8 @@ public class UCObject : MonoBehaviour
 		Vector3 resistance = Vector3.zero;
 
 		if (isGrounded || isSliding) {
-			Vector3 horizontalVelocity = velocity - Vector3.Dot (velocity, -gravityNormal) * -groundNormal;
+			Vector3 horizontalVelocity = velocity - Vector3.Dot (velocity, -gravityNormal) * -gravityNormal;
 			resistance = horizontalVelocity * Time.deltaTime * 10 * GetGroundFriction ();
-//			Debug.Log("Resistance: (" + resistance.x + ", " + resistance.y + ", " + resistance.z + ")");
 		}
 
 		return resistance;

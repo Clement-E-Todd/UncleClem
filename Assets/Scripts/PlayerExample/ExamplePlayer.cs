@@ -1,13 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class UCPlayer : UCObject
-{
+[RequireComponent (typeof (ExampleInput))]
 
-	UCInput playerInput = null;
+public class ExamplePlayer : UCObject
+{
+	ExampleInput playerInput = null;
 
 	// Movement Variables
-	Vector3 moveDirection = Vector3.zero;
+	Vector3 moveDirection = Vector3.forward;
 	float moveSpeedGoal = 0;
 	bool running = false;
 	float jumpTime = 0;
@@ -20,15 +21,10 @@ public class UCPlayer : UCObject
 	// Aniamation Variables
 	bool stepWithRightFootFirst = true;
 
-	protected void Awake ()
-	{
-		moveDirection = transform.TransformDirection (Vector3.forward);
-	}
-
 	protected override void Start ()
 	{
 		base.Start ();
-		playerInput = (UCInput)GetComponent (typeof(UCInput));
+		playerInput = (ExampleInput)GetComponent (typeof(ExampleInput));
 	}
 
 	protected override void Update ()
@@ -36,6 +32,12 @@ public class UCPlayer : UCObject
 		base.Update ();
 		HandleInput ();
 		HandleAnimation ();
+
+		// Rotate the model based on the player's current actions
+		if (!isSliding)
+			modelObject.transform.rotation = Quaternion.LookRotation(moveDirection, transform.up);
+		else
+			modelObject.transform.rotation = Quaternion.LookRotation(new Vector3 (velocity.x, 0, velocity.z).normalized, groundNormal);
 	}
 
 	void HandleInput ()
@@ -45,8 +47,8 @@ public class UCPlayer : UCObject
 		if (movement.magnitude > 0.25f) {
 			// Direction
 			moveDirection = new Vector3 (-movement.x, 0, -movement.y).normalized;
-			transform.rotation = Quaternion.LookRotation (moveDirection);
-			moveDirection = (moveDirection - (Vector3.Dot (moveDirection, -gravityNormal) * -gravityNormal)).normalized*moveDirection.magnitude;
+			if (isSliding && Vector3.Dot (moveDirection, velocity.normalized) < 0)
+				moveDirection = (moveDirection - (Vector3.Dot (moveDirection, velocity.normalized) * velocity.normalized)).normalized;
 
 			// Speed
 			{
@@ -71,7 +73,7 @@ public class UCPlayer : UCObject
 				velocityToAdd *= Mathf.Max (Mathf.Pow (GetGroundFriction (), 1.5f), 0.05f);
 				velocityToAdd *= slopeFactor;
 				if (isSliding)
-					velocityToAdd *= Mathf.Max(0, Vector3.Dot(velocityToAdd.normalized, velocity.normalized));
+					velocityToAdd *= Mathf.Max(0.5f, Vector3.Dot(velocityToAdd.normalized, velocity.normalized));
 				// Finally we apply these factors to our speed
 				velocity += velocityToAdd;
 				// If we went over the speed limit, now is the time to pull back
@@ -82,7 +84,6 @@ public class UCPlayer : UCObject
 					velocity = horizontalVelocity + verticalVelocity;// + (gravityNormal*gravityStrength);
 				}
 			}
-		
 		} else {
 			moveSpeedGoal = 0;
 		}
@@ -90,17 +91,18 @@ public class UCPlayer : UCObject
 		// Jump
 		if (playerInput.GetJump (true) && (isGrounded || isSliding)) {
 			// Use the character's up vector is grounded or the ground's surface normal if sliding
-			Vector3 normal = isGrounded ? transform.up : groundNormal;
+			Vector3 jumpNormal = !isSliding ? transform.up : groundNormal;
 			// To ensure jumps are consistent, first flatten our velocity to be parallel to the ground
-			velocity = velocity - (Vector3.Dot (velocity, normal) * normal);
+			velocity = velocity - (Vector3.Dot (velocity, jumpNormal) * jumpNormal);
 			// Then add the initial burst of upward speed
-			velocity += transform.TransformDirection (Vector3.up) * jumpPower;
+			velocity += transform.up * jumpPower;
 			// If we were standing on a moving platform, we add its velocity to ours as well
 			velocity += movingPlatformVelocity;
 			// And finally we start the timer which incidates when we will be forced to start falling
 			jumpTime = 0.1f;
 			// If we jumped out of a slide, we are no longer sliding
 			isSliding = false;
+
 		} else if (jumpTime > 0 && playerInput.GetJump (false)) {
 			velocity -= gravityNormal * gravityStrength * 2;
 			jumpTime = Mathf.Max (0, jumpTime - Time.deltaTime);
@@ -109,44 +111,48 @@ public class UCPlayer : UCObject
 		}
 	}
 
-	int TEMP = 0;
 	void HandleAnimation ()
 	{
 
 		// Arial Animations
-		if (!isGrounded) {
-//			Debug.Log("Not Grounded (Call #" + TEMP + ")");
-			TEMP++;
-			if (!animation.IsPlaying ("Arial")) {
-				animation.CrossFade ("Arial", 0.05f, PlayMode.StopAll);
+		if (!isGrounded && !isSliding) {
+			if (!modelObject.animation.IsPlaying ("Arial")) {
+				modelObject.animation.CrossFade ("Arial", 0.05f, PlayMode.StopAll);
 			}
-			animation ["Arial"].time = Mathf.Clamp ((velocity.y + 10) / 20, 0, 1);
+			modelObject.animation ["Arial"].time = Mathf.Clamp ((Vector3.Dot(velocity, -gravityNormal) + 10) / 20, 0, 1);
 		}
 
 		// Grounded Animations
-		else {
+		else if (!isSliding) {
 			// Stand
-			if (moveSpeedGoal == 0 && !animation.IsPlaying ("Stand")) {
-				animation.CrossFade ("Stand", 0.1f, PlayMode.StopAll);
-				animation ["Stand"].wrapMode = WrapMode.Loop;
+			if (moveSpeedGoal == 0 && !modelObject.animation.IsPlaying ("Stand")) {
+				modelObject.animation.CrossFade ("Stand", 0.25f, PlayMode.StopAll);
+				modelObject.animation ["Stand"].wrapMode = WrapMode.Loop;
 			}
 
 			// Walk or Run
 			else if (moveSpeedGoal != 0) {
 				string animationName = running ? "Run" : "Walk";
-				if (!animation.IsPlaying (animationName)) {
+				if (!modelObject.animation.IsPlaying (animationName)) {
 					// - Start the animation
-					animation.CrossFade (animationName, 0.1f, PlayMode.StopAll);
-					animation [animationName].wrapMode = WrapMode.Loop;
+					modelObject.animation.CrossFade (animationName, 0.1f, PlayMode.StopAll);
+					modelObject.animation [animationName].wrapMode = WrapMode.Loop;
 					// - Lift the foot which has been down longest first to prevent "skiing"
-					animation [animationName].time = stepWithRightFootFirst ? 0 : animation [animationName].length / 2;
+					modelObject.animation [animationName].time = stepWithRightFootFirst ? 0 : modelObject.animation [animationName].length / 2;
 				}
 				// - Set the speed of the animation based on how fast UCPlayer is actually moving
-				animation ["Run"].speed = (moveSpeedGoal / moveSpeedMax) * (1 + (1 - GetGroundFriction ()) * 0.6f);
-				animation ["Walk"].speed = animation ["Run"].speed * 2;
+				modelObject.animation ["Run"].speed = (moveSpeedGoal / moveSpeedMax) * (1 + (1 - GetGroundFriction ()) * 0.6f);
+				modelObject.animation ["Walk"].speed = modelObject.animation ["Run"].speed * 2;
 				// - Keep track of which foot should be lifted first when a new animation begins
-				stepWithRightFootFirst = (animation [animationName].time > animation [animationName].length / 2);
+				stepWithRightFootFirst = (modelObject.animation [animationName].time > modelObject.animation [animationName].length / 2);
 			}
+		}
+
+		// Sliding
+		else {
+			if (!modelObject.animation.IsPlaying ("Slide"))
+				modelObject.animation.CrossFade ("Slide", 0.1f, PlayMode.StopAll);
+			modelObject.animation ["Slide"].time = velocity.magnitude / slideSpeedLimit;
 		}
 	}
 
