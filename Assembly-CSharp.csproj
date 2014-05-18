@@ -46,6 +46,10 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\Gravity\UCGravity.cs" />
+     <Compile Include="Assets\Scripts\Gravity\UCGravityGlobal.cs" />
+     <Compile Include="Assets\Scripts\Gravity\UCGravityPoint.cs" />
+     <Compile Include="Assets\Scripts\Gravity\UCGravityZone.cs" />
      <Compile Include="Assets\Scripts\PlayerExample\ExampleInput.cs" />
      <Compile Include="Assets\Scripts\PlayerExample\ExampleInputKeyAndMouse.cs" />
      <Compile Include="Assets\Scripts\PlayerExample\ExampleInputTesting.cs" />
@@ -58,14 +62,14 @@
      <Compile Include="Assets\Scripts\UCObject.cs" />
      <Compile Include="Assets\Scripts\UCPlatform.cs" />
      <None Include="Assets\Standard Assets\Projectors\Guidelines.txt" />
-     <None Include="Assets\Toon Shading\Sources\Shaders\Toony-Basic.shader" />
+     <None Include="Assets\Materials\Toon Shading\Sources\Shaders\Toony-Basic.shader" />
      <None Include="Assets\Standard Assets\Projectors\Sources\Shaders\Projector Multiply.shader" />
-     <None Include="Assets\Toon Shading\Sources\Shaders\Toony-BasicOutline.shader" />
+     <None Include="Assets\Materials\Toon Shading\Sources\Shaders\Toony-BasicOutline.shader" />
      <None Include="Assets\Standard Assets\Projectors\Sources\Shaders\Projector Light.shader" />
-     <None Include="Assets\Toon Shading\Sources\Shaders\Toony-LightedOutline.shader" />
-     <None Include="Assets\Toon Shading\Sources\Shaders\Toony-Lighted.shader" />
-     <None Include="Assets\Toon Shading\Sources\Shaders\Toony-CustomOutline.shader" />
-     <None Include="Assets\Toon Shading\Sources\Shaders\Toony-Custom.shader" />
+     <None Include="Assets\Materials\Toon Shading\Sources\Shaders\Toony-LightedOutline.shader" />
+     <None Include="Assets\Materials\Toon Shading\Sources\Shaders\Toony-Lighted.shader" />
+     <None Include="Assets\Materials\Toon Shading\Sources\Shaders\Toony-CustomOutline.shader" />
+     <None Include="Assets\Materials\Toon Shading\Sources\Shaders\Toony-Custom.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -8,6 +8,7 @@ public class ExamplePlayer : UCObject
 	ExampleInput playerInput = null;
 
 	// Movement Variables
+	Vector2 moveInput = Vector2.zero;
 	Vector3 moveDirection = Vector3.forward;
 	float moveSpeedGoal = 0;
 	bool running = false;
@@ -35,7 +36,7 @@ public class ExamplePlayer : UCObject
 
 		// Rotate the model based on the player's current actions
 		if (!isSliding)
-			modelObject.transform.rotation = Quaternion.LookRotation(moveDirection, transform.up);
+			modelObject.transform.rotation = Quaternion.LookRotation(moveInput != Vector2.zero ? ((transform.right * -moveInput.x) + (transform.forward * -moveInput.y)).normalized : modelObject.transform.forward, -gravity.normalized);
 		else
 			modelObject.transform.rotation = Quaternion.LookRotation(new Vector3 (velocity.x, 0, velocity.z).normalized, groundNormal);
 	}
@@ -43,22 +44,23 @@ public class ExamplePlayer : UCObject
 	void HandleInput ()
 	{
 		// Walk, Run and Slide
-		Vector2 movement = playerInput.GetMovement ();
-		if (movement.magnitude > 0.25f) {
+		moveInput = playerInput.GetMovement ();
+		if (moveInput.magnitude > 0.25f) {
 			// Direction
-			moveDirection = new Vector3 (-movement.x, 0, -movement.y).normalized;
+			moveDirection = ((transform.right * -moveInput.x) + (transform.forward * -moveInput.y)).normalized;
+//			moveDirection = new Vector3 (-movement.x, 0, -movement.y).normalized;
 			if (isSliding && Vector3.Dot (moveDirection, velocity.normalized) < 0)
 				moveDirection = (moveDirection - (Vector3.Dot (moveDirection, velocity.normalized) * velocity.normalized)).normalized;
 
 			// Speed
 			{
 				// Since walking/running mostly concerns the horizontal plane we want to keep track of that
-				Vector3 originalHorizontalVelocity = velocity - (Vector3.Dot (velocity, -gravityNormal) * -gravityNormal);
+				Vector3 originalHorizontalVelocity = velocity - (Vector3.Dot (velocity, -gravity.normalized) * -gravity.normalized);
 				// Next we need to find out the top speed we can move at given the current situation
 				running = playerInput.GetRun (false);
-				moveSpeedGoal = !isSliding ? (movement.magnitude * moveSpeedMax / (running ? 1 : 2)) : (originalHorizontalVelocity.magnitude);
+				moveSpeedGoal = !isSliding ? (moveInput.magnitude * moveSpeedMax / (running ? 1 : 2)) : (originalHorizontalVelocity.magnitude);
 				// Our speed is reduced if we are walking/running up a slope
-				Vector3 slope = groundNormal - (Vector3.Dot (groundNormal, gravityNormal) * gravityNormal);
+				Vector3 slope = groundNormal - (Vector3.Dot (groundNormal, gravity.normalized) * gravity.normalized);
 				float slopeFactor = Vector3.Dot(slope, originalHorizontalVelocity.normalized);
 				if (slopeFactor < 0) {
 					slopeFactor = 1+slopeFactor;
@@ -77,11 +79,11 @@ public class ExamplePlayer : UCObject
 				// Finally we apply these factors to our speed
 				velocity += velocityToAdd;
 				// If we went over the speed limit, now is the time to pull back
-				Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravityNormal) * -gravityNormal);
+				Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravity.normalized) * -gravity.normalized);
 				Vector3 verticalVelocity = velocity - horizontalVelocity;
 				if (horizontalVelocity.magnitude > moveSpeedGoal) {
 					horizontalVelocity = horizontalVelocity.normalized * Mathf.Max (originalHorizontalVelocity.magnitude, moveSpeedGoal);
-					velocity = horizontalVelocity + verticalVelocity;// + (gravityNormal*gravityStrength);
+					velocity = horizontalVelocity + verticalVelocity;
 				}
 			}
 		} else {
@@ -104,7 +106,7 @@ public class ExamplePlayer : UCObject
 			isSliding = false;
 
 		} else if (jumpTime > 0 && playerInput.GetJump (false)) {
-			velocity -= gravityNormal * gravityStrength * 2;
+			velocity -= gravity * 2;
 			jumpTime = Mathf.Max (0, jumpTime - Time.deltaTime);
 		} else if (!playerInput.GetJump (false)) {
 			jumpTime = 0;
@@ -119,7 +121,7 @@ public class ExamplePlayer : UCObject
 			if (!modelObject.animation.IsPlaying ("Arial")) {
 				modelObject.animation.CrossFade ("Arial", 0.05f, PlayMode.StopAll);
 			}
-			modelObject.animation ["Arial"].time = Mathf.Clamp ((Vector3.Dot(velocity, -gravityNormal) + 10) / 20, 0, 1);
+			modelObject.animation ["Arial"].time = Mathf.Clamp ((Vector3.Dot(velocity, -gravity.normalized) + 10) / 20, 0, 1);
 		}
 
 		// Grounded Animations
