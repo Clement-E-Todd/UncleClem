@@ -21,6 +21,9 @@ public class ExamplePlayer : UCObject
 
 	// Aniamation Variables
 	bool stepWithRightFootFirst = true;
+	
+	// The Camera
+	public UCCamera controlledCamera = null;
 
 	protected override void Start ()
 	{
@@ -35,10 +38,9 @@ public class ExamplePlayer : UCObject
 		HandleAnimation ();
 
 		// Rotate the model based on the player's current actions
-		if (!isSliding)
-			modelObject.transform.rotation = Quaternion.LookRotation(moveInput != Vector2.zero ? ((transform.right * -moveInput.x) + (transform.forward * -moveInput.y)).normalized : modelObject.transform.forward, -gravity.normalized);
-		else
-			modelObject.transform.rotation = Quaternion.LookRotation(new Vector3 (velocity.x, 0, velocity.z).normalized, groundNormal);
+		Vector3 groundedVelocity = velocity - (Vector3.Dot (velocity, groundNormal) * groundNormal);
+		modelObject.transform.rotation = Quaternion.Slerp(modelObject.transform.rotation, Quaternion.LookRotation(groundedVelocity.normalized, groundNormal), Time.deltaTime*(isSliding?4:40));
+		
 	}
 
 	void HandleInput ()
@@ -47,8 +49,10 @@ public class ExamplePlayer : UCObject
 		moveInput = playerInput.GetMovement ();
 		if (moveInput.magnitude > 0.25f) {
 			// Direction
-			moveDirection = ((transform.right * -moveInput.x) + (transform.forward * -moveInput.y)).normalized;
-//			moveDirection = new Vector3 (-movement.x, 0, -movement.y).normalized;
+			Vector3 cameraForward = (-controlledCamera.offsetDirection - (Vector3.Dot (-controlledCamera.offsetDirection, transform.up) * transform.up)).normalized;
+			Vector3 cameraRight = -Vector3.Cross(cameraForward, transform.up);
+			moveDirection = ((cameraRight * moveInput.x) + (cameraForward * moveInput.y)).normalized;
+			
 			if (isSliding && Vector3.Dot (moveDirection, velocity.normalized) < 0)
 				moveDirection = (moveDirection - (Vector3.Dot (moveDirection, velocity.normalized) * velocity.normalized)).normalized;
 
@@ -110,6 +114,12 @@ public class ExamplePlayer : UCObject
 			jumpTime = Mathf.Max (0, jumpTime - Time.deltaTime);
 		} else if (!playerInput.GetJump (false)) {
 			jumpTime = 0;
+		}
+		
+		// Camera
+		Vector2 cameraInput = playerInput.GetCamera ();
+		if (cameraInput.magnitude > 0.1f) {
+			controlledCamera.offsetDirection = Vector3.RotateTowards(controlledCamera.offsetDirection, Vector3.Cross(controlledCamera.offsetDirection, controlledCamera.targetUp), Time.deltaTime*cameraInput.x*2, 1.0f);
 		}
 	}
 

@@ -8,7 +8,6 @@ public class UCObject : MonoBehaviour
 {
 	public static List<UCObject> objectsInScene = new List<UCObject> ();
 
-	// Physics viariables
 	CharacterController characterController;
 	public GameObject modelObject;
 	protected Vector3 velocity;
@@ -18,10 +17,12 @@ public class UCObject : MonoBehaviour
 	protected Vector3 movingPlatformVelocity = Vector3.zero;
 	protected Vector3 groundNormal = Vector3.up;
 	public const float slideSpeedLimit = 20;
-	Vector3 previousPosition;
 	List<UCForce> appliedForces = new List<UCForce> ();
 	public List<UCGravity> gravitySources = new List<UCGravity> ();
 	public bool debugMessages = false;
+
+	// TODO - Remove this temporary method of adding objects to the main camera targets
+	public int tempCamWeight = 0;
 
 	protected virtual void Start ()
 	{
@@ -37,6 +38,11 @@ public class UCObject : MonoBehaviour
 
 	protected virtual void Update ()
 	{
+		// TODO - Remove this temporary AND VERY INEFFICIENT method of adding objects to the main camera targets
+		if (tempCamWeight > 0) {
+			UCCamera.activeCamera.SetTargetWeight(gameObject, (ushort)tempCamWeight);
+		}
+	
 		// Reduce velocity based on the friction of the ground
 		velocity -= GetGroundResistance ();
 		Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravity.normalized) * -gravity.normalized);
@@ -48,12 +54,11 @@ public class UCObject : MonoBehaviour
 
 		// Debug messages written to the console
 		if (debugMessages) {
-			Debug.Log("Velocity: (" + velocity.x + ", " + velocity.y + ", " + velocity.z + ") Magnitude: " + velocity.magnitude);
+//			Debug.Log("Velocity: (" + velocity.x + ", " + velocity.y + ", " + velocity.z + ") Magnitude: " + velocity.magnitude);
 		}
 
 		// Move the character controller
 		isGrounded = false;
-		previousPosition = transform.position;
 		characterController.Move (velocity * Time.deltaTime);
 
 		// Disable sliding once we come to a stop
@@ -68,7 +73,7 @@ public class UCObject : MonoBehaviour
 		if (isGrounded) {
 			Vector3 slope = groundNormal - (Vector3.Dot (groundNormal, gravity.normalized) * gravity.normalized);
 			float slopeFactor = (horizontalVelocity != Vector3.zero) ? -Vector3.Dot (slope, horizontalVelocity.normalized) : 0.0f;
-			
+
 			if (slopeFactor < 0)	// downhill
 				velocity = velocity - (Vector3.Dot (velocity, groundNormal) * groundNormal);
 			else 	 				// uphill or level ground
@@ -78,14 +83,14 @@ public class UCObject : MonoBehaviour
 		// Apply gravity
 		ApplyGravity();
 
-		// The transform's "up" vector should always be the opposite of gravity. 
+		// The transform's "up" vector should always be the opposite of gravity.
 		transform.up = -gravity.normalized;
 		characterController.transform.up = transform.up;
 
-//		// Debug - Draw Rays reflecting the transform
-//		Debug.DrawRay(transform.position, transform.up*5, Color.green, 0.0f, false);
-//		Debug.DrawRay(transform.position, transform.right*5, Color.red, 0.0f, false);
-//		Debug.DrawRay(transform.position, transform.forward*5, Color.blue, 0.0f, false);
+		// Debug - Draw Rays reflecting the transform
+		Debug.DrawRay(transform.position, transform.up*5, Color.green, 0.0f, false);
+		Debug.DrawRay(transform.position, transform.right*5, Color.red, 0.0f, false);
+		Debug.DrawRay(transform.position, transform.forward*5, Color.blue, 0.0f, false);
 	}
 
 	// Collision event when THIS moves into a COLLIDER
@@ -94,16 +99,15 @@ public class UCObject : MonoBehaviour
 		// See what we hit
 		Transform hitTarget = hit.collider.transform;
 
-		if (Vector3.Dot (gravity.normalized, -hit.normal) > 0.9f &&
+//		if (debugMessages)
+//			Debug.Log("Slope: " + Vector3.Dot (hit.normal, -gravity.normalized) + ", Limit (Min): " + getSlopeLimit());
+
+		if (Vector3.Dot (hit.normal, -gravity.normalized) > 0.1f &&
 			Vector3.Dot (velocity.normalized, hit.normal) < 0) {
 
 			groundNormal = hit.normal;
-			float slopeLimit = Mathf.Sin ((1 - ((float)characterController.slopeLimit / 90.0f)) * ((Mathf.PI / 2)));
 
-//			if (debugMessages)
-//				Debug.Log("Slope: " + Vector3.Dot (hit.normal, -gravity.normalized) + ", Limit (Min): " + slopeLimit);
-
-			if (Vector3.Dot (hit.normal, -gravity.normalized) > slopeLimit) {
+			if (Vector3.Dot (hit.normal, -gravity.normalized) > getSlopeLimit()) {
 				if (!isSliding)
 					isGrounded = true;
 				UCForce force = new UCForce ();
@@ -126,8 +130,9 @@ public class UCObject : MonoBehaviour
 			if (isSliding) {
 				velocity = velocity - (Vector3.Dot (velocity, hit.normal) * hit.normal) + gravity;
 
-				if (Vector3.Dot (hit.normal, -gravity.normalized) <= slopeLimit) {
+				if (Vector3.Dot (hit.normal, -gravity.normalized) <= getSlopeLimit()) {
 					Vector3 slideDirection = (gravity.normalized - (Vector3.Dot (gravity.normalized, hit.normal) * hit.normal)).normalized;
+					Debug.DrawRay(transform.position, slideDirection*5, Color.blue, 0.0f, false);
 
 					Vector3 originalVelocity = velocity;
 					velocity += slideDirection * gravity.magnitude * (1 - Vector3.Dot (hit.normal, -gravity.normalized));
@@ -158,7 +163,7 @@ public class UCObject : MonoBehaviour
 			force.isFloor = false;
 			force.point = contact.point;
 			force.normal = contact.normal;
-				
+
 			UCPlatform platform = (UCPlatform)collision.collider.GetComponent (typeof(UCPlatform));
 
 			if (platform)
@@ -169,7 +174,7 @@ public class UCObject : MonoBehaviour
 			force.localRotation = Quaternion.Inverse (force.source.rotation) * modelObject.transform.rotation;
 			if (platform)
 				platform.AssumeCurrentTransform ();
-				
+
 			appliedForces.Add (force);
 		}
 	}
@@ -197,14 +202,13 @@ public class UCObject : MonoBehaviour
 
 				// Allow the force to move the object
 				if (appliedForces [0].isFloor) {
-					previousPosition = transform.position;
 					characterController.Move (moveDistance);
 					movingPlatformVelocity += moveDistance / Time.deltaTime;
 				} else {
 					velocity += appliedForces [0].normal * moveDistance.magnitude / Time.deltaTime;
 				}
 			}
-			
+
 			// Follow the rotation of the force's source
 			Quaternion newGlobalRotation = appliedForces [0].source.rotation * appliedForces [0].localRotation;
 			Quaternion rotationDiff = newGlobalRotation * Quaternion.Inverse (appliedForces [0].globalRotation);
@@ -220,7 +224,7 @@ public class UCObject : MonoBehaviour
 	{
 		int totalFloors = 0;
 		float friction = 0.0f;
-		
+
 		foreach (UCForce force in appliedForces) {
 			if (force.isFloor && force.source.GetComponent (typeof(UCPlatform)) != null) {
 				friction += ((UCPlatform)force.source.GetComponent (typeof(UCPlatform))).friction;
@@ -268,5 +272,9 @@ public class UCObject : MonoBehaviour
 			gravity *= 1 - Time.deltaTime*4;
 		}
 		velocity += gravity;
+	}
+
+	float getSlopeLimit() {
+		return Mathf.Sin ((1 - ((float)characterController.slopeLimit / 90.0f)) * ((Mathf.PI / 2)));
 	}
 }

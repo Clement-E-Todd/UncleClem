@@ -6,11 +6,11 @@ using System.Collections;
 public class ExampleInputTesting : ExampleInput {
 
 	public override Vector2	GetMovement () {
-		return new Vector2 (Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+		return new Vector2 (Input.GetAxisRaw("GamePad1_Axis1"), -Input.GetAxisRaw("GamePad1_Axis2"));
 	}
 
 	public override Vector2	GetCamera () {
-		return new Vector2 (0,0);
+		return new Vector2 (Input.GetAxisRaw("GamePad1_Axis4"), Input.GetAxisRaw("GamePad1_Axis5"));
 	}
 
 	public override bool	GetRun (bool tap) {
