@@ -59,6 +59,7 @@
      <Compile Include="Assets\Scripts\TestScripts\AnimationTester.cs" />
      <Compile Include="Assets\Scripts\TestScripts\AutoMove.cs" />
      <Compile Include="Assets\Scripts\TestScripts\AutoRotate.cs" />
+     <Compile Include="Assets\Scripts\TestScripts\CameraTargetHack.cs" />
      <Compile Include="Assets\Scripts\TestScripts\SimpleFollowCam.cs" />
      <Compile Include="Assets\Scripts\UCForce.cs" />
      <Compile Include="Assets\Scripts\UCObject.cs" />

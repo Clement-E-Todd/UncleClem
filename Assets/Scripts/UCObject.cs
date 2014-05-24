@@ -21,9 +21,6 @@ public class UCObject : MonoBehaviour
 	public List<UCGravity> gravitySources = new List<UCGravity> ();
 	public bool debugMessages = false;
 
-	// TODO - Remove this temporary method of adding objects to the main camera targets
-	public int tempCamWeight = 0;
-
 	protected virtual void Start ()
 	{
 		objectsInScene.Add (this);
@@ -38,11 +35,6 @@ public class UCObject : MonoBehaviour
 
 	protected virtual void Update ()
 	{
-		// TODO - Remove this temporary AND VERY INEFFICIENT method of adding objects to the main camera targets
-		if (tempCamWeight > 0) {
-			UCCamera.activeCamera.SetTargetWeight(gameObject, (ushort)tempCamWeight);
-		}
-	
 		// Reduce velocity based on the friction of the ground
 		velocity -= GetGroundResistance ();
 		Vector3 horizontalVelocity = velocity - (Vector3.Dot (velocity, -gravity.normalized) * -gravity.normalized);
@@ -99,8 +91,8 @@ public class UCObject : MonoBehaviour
 		// See what we hit
 		Transform hitTarget = hit.collider.transform;
 
-//		if (debugMessages)
-//			Debug.Log("Slope: " + Vector3.Dot (hit.normal, -gravity.normalized) + ", Limit (Min): " + getSlopeLimit());
+		if (debugMessages)
+			Debug.Log("Slope: " + Vector3.Dot (hit.normal, -gravity.normalized) + ", Limit (Min): " + getSlopeLimit());
 
 		if (Vector3.Dot (hit.normal, -gravity.normalized) > 0.1f &&
 			Vector3.Dot (velocity.normalized, hit.normal) < 0) {
@@ -125,9 +117,11 @@ public class UCObject : MonoBehaviour
 			} else {
 				// If the slope is too steep, slide down
 				isSliding = true;
+//				if (debugMessages)
+//					Debug.Log ("Started sliding with slope factor of " + Vector3.Dot(hit.normal, -gravity.normalized) + " (slope limit A: " + getSlopeLimit(true) + ", B: " + getSlopeLimit(false) + ")");
 			}
 
-			if (isSliding) {
+			if (!isGrounded) {
 				velocity = velocity - (Vector3.Dot (velocity, hit.normal) * hit.normal) + gravity;
 
 				if (Vector3.Dot (hit.normal, -gravity.normalized) <= getSlopeLimit()) {
@@ -205,7 +199,7 @@ public class UCObject : MonoBehaviour
 					characterController.Move (moveDistance);
 					movingPlatformVelocity += moveDistance / Time.deltaTime;
 				} else {
-					velocity += appliedForces [0].normal * moveDistance.magnitude / Time.deltaTime;
+					velocity += appliedForces [0].normal * moveDistance.magnitude;
 				}
 			}
 

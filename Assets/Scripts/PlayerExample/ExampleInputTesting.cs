@@ -14,12 +14,7 @@ public class ExampleInputTesting : ExampleInput {
 	}
 
 	public override bool	GetRun (bool tap) {
-		if (IsOnMacOS())
-			return tap ? Input.GetKeyDown(KeyCode.JoystickButton18) : Input.GetKey(KeyCode.JoystickButton18);
-		if (IsOnWindows())
-			return tap ? Input.GetKeyDown (KeyCode.JoystickButton2) : Input.GetKey (KeyCode.JoystickButton2);
-		else
-			return false;
+		return Input.GetAxisRaw("GamePad1_Axis3") < -0.25f;
 	}
 
 	public override bool	GetJump (bool tap) {

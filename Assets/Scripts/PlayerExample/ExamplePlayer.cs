@@ -38,8 +38,10 @@ public class ExamplePlayer : UCObject
 		HandleAnimation ();
 
 		// Rotate the model based on the player's current actions
-		Vector3 groundedVelocity = velocity - (Vector3.Dot (velocity, groundNormal) * groundNormal);
-		modelObject.transform.rotation = Quaternion.Slerp(modelObject.transform.rotation, Quaternion.LookRotation(groundedVelocity.normalized, groundNormal), Time.deltaTime*(isSliding?4:40));
+		Vector3 upNormal = !isSliding ? transform.up: groundNormal;
+		Vector3 groundedVelocity = velocity - (Vector3.Dot (velocity, upNormal) * upNormal);
+		if (groundedVelocity != Vector3.zero)
+			modelObject.transform.rotation = Quaternion.Slerp(modelObject.transform.rotation, Quaternion.LookRotation(groundedVelocity.normalized, upNormal), Time.deltaTime*(isSliding?4:40));
 		
 	}
 
@@ -49,7 +51,7 @@ public class ExamplePlayer : UCObject
 		moveInput = playerInput.GetMovement ();
 		if (moveInput.magnitude > 0.25f) {
 			// Direction
-			Vector3 cameraForward = (-controlledCamera.offsetDirection - (Vector3.Dot (-controlledCamera.offsetDirection, transform.up) * transform.up)).normalized;
+			Vector3 cameraForward = (controlledCamera.transform.forward - (Vector3.Dot (controlledCamera.transform.forward, transform.up) * transform.up)).normalized;
 			Vector3 cameraRight = -Vector3.Cross(cameraForward, transform.up);
 			moveDirection = ((cameraRight * moveInput.x) + (cameraForward * moveInput.y)).normalized;
 			
@@ -118,9 +120,11 @@ public class ExamplePlayer : UCObject
 		
 		// Camera
 		Vector2 cameraInput = playerInput.GetCamera ();
-		if (cameraInput.magnitude > 0.1f) {
-			controlledCamera.offsetDirection = Vector3.RotateTowards(controlledCamera.offsetDirection, Vector3.Cross(controlledCamera.offsetDirection, controlledCamera.targetUp), Time.deltaTime*cameraInput.x*2, 1.0f);
-		}
+		if (Mathf.Abs(cameraInput.x) > 0.25f)
+			controlledCamera.RotateAround(cameraInput.x);
+		if (Mathf.Abs(cameraInput.y) > 0.4f)
+			controlledCamera.ZoomIn(-cameraInput.y/4);
+
 	}
 
 	void HandleAnimation ()
