@@ -40,9 +40,10 @@ public class ExamplePlayer : UCObject
 		// Rotate the model based on the player's current actions
 		Vector3 upNormal = !isSliding ? transform.up: groundNormal;
 		Vector3 groundedVelocity = velocity - (Vector3.Dot (velocity, upNormal) * upNormal);
-		if (groundedVelocity != Vector3.zero)
+		if (groundedVelocity.magnitude > 1) {
 			modelObject.transform.rotation = Quaternion.Slerp(modelObject.transform.rotation, Quaternion.LookRotation(groundedVelocity.normalized, upNormal), Time.deltaTime*(isSliding?4:40));
-		
+			followPlatformRotation = false;
+		}
 	}
 
 	void HandleInput ()
@@ -65,21 +66,9 @@ public class ExamplePlayer : UCObject
 				// Next we need to find out the top speed we can move at given the current situation
 				running = playerInput.GetRun (false);
 				moveSpeedGoal = !isSliding ? (moveInput.magnitude * moveSpeedMax / (running ? 1 : 2)) : (originalHorizontalVelocity.magnitude);
-				// Our speed is reduced if we are walking/running up a slope
-				Vector3 slope = groundNormal - (Vector3.Dot (groundNormal, gravity.normalized) * gravity.normalized);
-				float slopeFactor = Vector3.Dot(slope, originalHorizontalVelocity.normalized);
-				if (slopeFactor < 0) {
-					slopeFactor = 1+slopeFactor;
-					moveSpeedGoal *= slopeFactor;
-				}
-				else {
-					slopeFactor = 1.0f;
-				}
-				slopeFactor *= slopeFactor;
 				// Accumulate the various factors which influence our velocity
 				Vector3 velocityToAdd = (moveDirection * moveSpeedGoal * Time.deltaTime / Mathf.Max (moveAccelTime, 0.001f));
-				velocityToAdd *= Mathf.Max (Mathf.Pow (GetGroundFriction (), 1.5f), 0.05f);
-				velocityToAdd *= slopeFactor;
+				velocityToAdd *= Mathf.Max (Mathf.Pow (groundFriction, 1.5f), 0.05f);
 				if (isSliding)
 					velocityToAdd *= Mathf.Max(0.5f, Vector3.Dot(velocityToAdd.normalized, velocity.normalized));
 				// Finally we apply these factors to our speed
@@ -97,7 +86,7 @@ public class ExamplePlayer : UCObject
 		}
 	
 		// Jump
-		if (playerInput.GetJump (true) && (isGrounded || isSliding)) {
+		if (playerInput.GetJump (true) && isGrounded) {
 			// Use the character's up vector is grounded or the ground's surface normal if sliding
 			Vector3 jumpNormal = !isSliding ? transform.up : groundNormal;
 			// To ensure jumps are consistent, first flatten our velocity to be parallel to the ground
@@ -105,12 +94,11 @@ public class ExamplePlayer : UCObject
 			// Then add the initial burst of upward speed
 			velocity += transform.up * jumpPower;
 			// If we were standing on a moving platform, we add its velocity to ours as well
-			velocity += movingPlatformVelocity;
+			velocity += (movingPlatformVelocity - Vector3.Dot(movingPlatformVelocity, gravity.normalized) * gravity.normalized) / Time.deltaTime;
 			// And finally we start the timer which incidates when we will be forced to start falling
 			jumpTime = 0.1f;
 			// If we jumped out of a slide, we are no longer sliding
 			isSliding = false;
-
 		} else if (jumpTime > 0 && playerInput.GetJump (false)) {
 			velocity -= gravity * 2;
 			jumpTime = Mathf.Max (0, jumpTime - Time.deltaTime);
@@ -157,7 +145,7 @@ public class ExamplePlayer : UCObject
 					modelObject.animation [animationName].time = stepWithRightFootFirst ? 0 : modelObject.animation [animationName].length / 2;
 				}
 				// - Set the speed of the animation based on how fast UCPlayer is actually moving
-				modelObject.animation ["Run"].speed = (moveSpeedGoal / moveSpeedMax) * (1 + (1 - GetGroundFriction ()) * 0.6f);
+				modelObject.animation ["Run"].speed = (moveSpeedGoal / moveSpeedMax) * (1 + (1 - groundFriction) * 0.6f);
 				modelObject.animation ["Walk"].speed = modelObject.animation ["Run"].speed * 2;
 				// - Keep track of which foot should be lifted first when a new animation begins
 				stepWithRightFootFirst = (modelObject.animation [animationName].time > modelObject.animation [animationName].length / 2);

@@ -61,9 +61,8 @@
      <Compile Include="Assets\Scripts\TestScripts\AutoRotate.cs" />
      <Compile Include="Assets\Scripts\TestScripts\CameraTargetHack.cs" />
      <Compile Include="Assets\Scripts\TestScripts\SimpleFollowCam.cs" />
-     <Compile Include="Assets\Scripts\UCForce.cs" />
+     <Compile Include="Assets\Scripts\UCFriction.cs" />
      <Compile Include="Assets\Scripts\UCObject.cs" />
-     <Compile Include="Assets\Scripts\UCPlatform.cs" />
      <None Include="Assets\Standard Assets\Projectors\Guidelines.txt" />
      <None Include="Assets\Materials\Toon Shading\Sources\Shaders\Toony-Basic.shader" />
      <None Include="Assets\Standard Assets\Projectors\Sources\Shaders\Projector Multiply.shader" />

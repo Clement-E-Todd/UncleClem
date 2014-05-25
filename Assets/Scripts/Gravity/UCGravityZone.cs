@@ -1,11 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 [RequireComponent (typeof(Collider))]
 
 public class UCGravityZone : UCGravity
 {
 	public Vector3 force = new Vector3 (0, -0.98f, 0);
+	List<Collider> collidersInRange = new List<Collider>();
 	
 	public override Vector3 GetGravityForObject (UCObject target)
 	{
@@ -14,18 +16,20 @@ public class UCGravityZone : UCGravity
 
 	void OnTriggerEnter (Collider collider)
 	{
-		HandleCollision (collider);
+		collidersInRange.Add(collider);
 	}
 	
-	void OnTriggerStay (Collider collider)
+	void OnTriggerExit (Collider collider)
 	{
-		HandleCollision (collider);
+		collidersInRange.Remove(collider);
 	}
 	
-	void HandleCollision (Collider collider)
+	void Update ()
 	{
-		if (collider.GetComponent(typeof(UCObject))) {
-			((UCObject)collider.GetComponent(typeof(UCObject))).gravitySources.Add(this);
+		foreach (Collider collider in collidersInRange) {
+			if (collider.GetComponent(typeof(UCObject))) {
+				((UCObject)collider.GetComponent(typeof(UCObject))).gravitySources.Add(this);
+			}
 		}
 	}
 }
