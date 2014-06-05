@@ -93,7 +93,7 @@ public class UCObject : MonoBehaviour
 		
 		// Debug messages written to the console
 		if (debugMessages) {
-			Debug.Log("Velocity: (" + velocity.x + ", " + velocity.y + ", " + velocity.z + ") Magnitude: " + velocity.magnitude);
+//			Debug.Log("Velocity: (" + velocity.x + ", " + velocity.y + ", " + velocity.z + ") Magnitude: " + velocity.magnitude);
 		}
 
 		// Move the character controller
