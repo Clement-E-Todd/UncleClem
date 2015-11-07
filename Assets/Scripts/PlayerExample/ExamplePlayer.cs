@@ -120,43 +120,43 @@ public class ExamplePlayer : UCObject
 
 		// Arial Animations
 		if (!isGrounded && !isSliding) {
-			if (!modelObject.animation.IsPlaying ("Arial")) {
-				modelObject.animation.CrossFade ("Arial", 0.05f, PlayMode.StopAll);
+			if (!modelObject.GetComponent<Animation>().IsPlaying ("Arial")) {
+				modelObject.GetComponent<Animation>().CrossFade ("Arial", 0.05f, PlayMode.StopAll);
 			}
-			modelObject.animation ["Arial"].time = Mathf.Clamp ((Vector3.Dot(velocity, -gravity.normalized) + 10) / 20, 0, 1);
+			modelObject.GetComponent<Animation>() ["Arial"].time = Mathf.Clamp ((Vector3.Dot(velocity, -gravity.normalized) + 10) / 20, 0, 1);
 		}
 
 		// Grounded Animations
 		else if (!isSliding) {
 			// Stand
-			if (moveSpeedGoal == 0 && !modelObject.animation.IsPlaying ("Stand")) {
-				modelObject.animation.CrossFade ("Stand", 0.25f, PlayMode.StopAll);
-				modelObject.animation ["Stand"].wrapMode = WrapMode.Loop;
+			if (moveSpeedGoal == 0 && !modelObject.GetComponent<Animation>().IsPlaying ("Stand")) {
+				modelObject.GetComponent<Animation>().CrossFade ("Stand", 0.25f, PlayMode.StopAll);
+				modelObject.GetComponent<Animation>() ["Stand"].wrapMode = WrapMode.Loop;
 			}
 
 			// Walk or Run
 			else if (moveSpeedGoal != 0) {
 				string animationName = running ? "Run" : "Walk";
-				if (!modelObject.animation.IsPlaying (animationName)) {
+				if (!modelObject.GetComponent<Animation>().IsPlaying (animationName)) {
 					// - Start the animation
-					modelObject.animation.CrossFade (animationName, 0.1f, PlayMode.StopAll);
-					modelObject.animation [animationName].wrapMode = WrapMode.Loop;
+					modelObject.GetComponent<Animation>().CrossFade (animationName, 0.1f, PlayMode.StopAll);
+					modelObject.GetComponent<Animation>() [animationName].wrapMode = WrapMode.Loop;
 					// - Lift the foot which has been down longest first to prevent "skiing"
-					modelObject.animation [animationName].time = stepWithRightFootFirst ? 0 : modelObject.animation [animationName].length / 2;
+					modelObject.GetComponent<Animation>() [animationName].time = stepWithRightFootFirst ? 0 : modelObject.GetComponent<Animation>() [animationName].length / 2;
 				}
 				// - Set the speed of the animation based on how fast UCPlayer is actually moving
-				modelObject.animation ["Run"].speed = (moveSpeedGoal / moveSpeedMax) * (1 + (1 - groundFriction) * 0.6f);
-				modelObject.animation ["Walk"].speed = modelObject.animation ["Run"].speed * 2;
+				modelObject.GetComponent<Animation>() ["Run"].speed = (moveSpeedGoal / moveSpeedMax) * (1 + (1 - groundFriction) * 0.6f);
+				modelObject.GetComponent<Animation>() ["Walk"].speed = modelObject.GetComponent<Animation>() ["Run"].speed * 2;
 				// - Keep track of which foot should be lifted first when a new animation begins
-				stepWithRightFootFirst = (modelObject.animation [animationName].time > modelObject.animation [animationName].length / 2);
+				stepWithRightFootFirst = (modelObject.GetComponent<Animation>() [animationName].time > modelObject.GetComponent<Animation>() [animationName].length / 2);
 			}
 		}
 
 		// Sliding
 		else {
-			if (!modelObject.animation.IsPlaying ("Slide"))
-				modelObject.animation.CrossFade ("Slide", 0.1f, PlayMode.StopAll);
-			modelObject.animation ["Slide"].time = velocity.magnitude / slideSpeedLimit;
+			if (!modelObject.GetComponent<Animation>().IsPlaying ("Slide"))
+				modelObject.GetComponent<Animation>().CrossFade ("Slide", 0.1f, PlayMode.StopAll);
+			modelObject.GetComponent<Animation>() ["Slide"].time = velocity.magnitude / slideSpeedLimit;
 		}
 	}
 

@@ -10,44 +10,44 @@ public class AnimationTester : MonoBehaviour
 	// Use this for initialization
 	void Start ()
 	{
-		animation.CrossFade ("Stand", 2.0f, PlayMode.StopAll);
-		animation.wrapMode = WrapMode.Loop;
+		GetComponent<Animation>().CrossFade ("Stand", 2.0f, PlayMode.StopAll);
+		GetComponent<Animation>().wrapMode = WrapMode.Loop;
 	}
 	
 	// Update is called once per frame
 	void Update ()
 	{
 		if (Input.GetKeyDown (KeyCode.Space)) {
-			if (animation.IsPlaying ("Stand")) {
-				animation.CrossFade ("Walk", 0.5f, PlayMode.StopAll);
-			} else if (animation.IsPlaying ("Walk")) {
-				animation.CrossFade ("Run", 0.5f, PlayMode.StopAll);
-				animation["Run"].time = animation["Walk"].time;
-			} else if (animation.IsPlaying ("Run")) {
-				animation.CrossFade ("Stand", 0.5f, PlayMode.StopAll);
+			if (GetComponent<Animation>().IsPlaying ("Stand")) {
+				GetComponent<Animation>().CrossFade ("Walk", 0.5f, PlayMode.StopAll);
+			} else if (GetComponent<Animation>().IsPlaying ("Walk")) {
+				GetComponent<Animation>().CrossFade ("Run", 0.5f, PlayMode.StopAll);
+				GetComponent<Animation>()["Run"].time = GetComponent<Animation>()["Walk"].time;
+			} else if (GetComponent<Animation>().IsPlaying ("Run")) {
+				GetComponent<Animation>().CrossFade ("Stand", 0.5f, PlayMode.StopAll);
 			}
 		}
 
 		if (Input.GetKeyDown (KeyCode.S)) {
-			animation.CrossFade ("Stand", 0.5f, PlayMode.StopAll);
+			GetComponent<Animation>().CrossFade ("Stand", 0.5f, PlayMode.StopAll);
 		}
 
 		if (Input.GetKeyDown (KeyCode.W)) {
-			if (animation.IsPlaying ("Run")) {
-				animation.CrossFade ("Walk", 0.5f, PlayMode.StopAll);
-			} else if (animation.IsPlaying ("Walk")) {
-				animation.CrossFade ("Run", 0.5f, PlayMode.StopAll);
+			if (GetComponent<Animation>().IsPlaying ("Run")) {
+				GetComponent<Animation>().CrossFade ("Walk", 0.5f, PlayMode.StopAll);
+			} else if (GetComponent<Animation>().IsPlaying ("Walk")) {
+				GetComponent<Animation>().CrossFade ("Run", 0.5f, PlayMode.StopAll);
 			} else {
-				animation.CrossFade ("Walk", 0.5f, PlayMode.StopAll);
+				GetComponent<Animation>().CrossFade ("Walk", 0.5f, PlayMode.StopAll);
 			}
 		}
 
 		if (Input.GetKeyDown (KeyCode.T)) {
-			animation.CrossFade ("Test", 0.5f, PlayMode.StopAll);
+			GetComponent<Animation>().CrossFade ("Test", 0.5f, PlayMode.StopAll);
 		}
 
 		if (animationSpeed != previousSpeed) {
-			foreach (AnimationState state in animation) {
+			foreach (AnimationState state in GetComponent<Animation>()) {
 				state.speed = animationSpeed;
 			}
 			previousSpeed = animationSpeed;
